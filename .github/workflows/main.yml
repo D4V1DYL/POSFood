@@ -60,7 +60,7 @@ jobs:
 
     - name: 👷 Build app
       run: |
-        eas build --local \
+        eas build all --local \
           --non-interactive \
           --output=./app-build \
           --platform=${{ github.event.inputs.platform }} \
