@@ -3,7 +3,7 @@ name: Build and Submit App
 on:
   push:
     branches:
-      - master  
+      - master
   workflow_dispatch:
     inputs:
       os:
@@ -12,6 +12,7 @@ on:
         options:
           - macos-latest
           - ubuntu-latest
+        default: ubuntu-latest  # Set default OS value
       platform:
         type: choice
         description: Platform to build for
@@ -33,7 +34,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ github.event.inputs.os }}
+    runs-on: ${{ github.event.inputs.os || 'ubuntu-latest' }}  # Default to ubuntu-latest if not set
     strategy:
       matrix:
         node: [18.x]  # Specify Node.js version
