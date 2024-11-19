@@ -115,13 +115,11 @@ export default function HomeScreen() {
           <Ionicons name="person" size={24} color="#FFF" />
           <Text style={styles.changeUserText}>Change User</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleChangeUser}>
           <Image
-            source={require('../../assets/images/BiliardLogo.jpg')}
+            source={require('../../assets/images/logo_billiard-removebg-preview.png')}
             style={styles.logo}
             resizeMode="contain"
           />
-        </TouchableOpacity>
         <Text style={styles.welcomeText}>Welcome, {waiterCode}!</Text>
         <Text style={styles.subText}>Ready to take some orders?</Text>
       </View>
@@ -195,6 +193,7 @@ const styles = StyleSheet.create({
   centeredWelcomeContainer: {
     alignItems: 'center',
     paddingHorizontal: 20,
+    bottom:85
   },
   welcomeText: {
     fontSize: 28,
@@ -210,9 +209,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   logo: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
+    width: 300,
+    height: 200,
+    top: 50,
   },
   changeUserButton: {
     flexDirection: 'row',
@@ -221,7 +220,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 50,
     elevation: 5,
-    bottom: 150,
+    bottom: 60,
     right: 90,
   },
   changeUserText: {

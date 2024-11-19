@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,12 +14,26 @@ interface Order {
   quantity: number;
 }
 
+const CustomAlert: React.FC<{ message: string; onClose: () => void }> = ({ message, onClose }) => (
+  <Modal transparent={true} animationType="slide" visible={true}>
+    <View style={styles.alertContainer}>
+      <View style={styles.alertBox}>
+        <Text style={styles.alertMessage}>{message}</Text>
+        <TouchableOpacity onPress={onClose} style={styles.alertButton}>
+          <Text style={styles.alertButtonText}>OK</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
 const OrderReviewScreen: React.FC = () => {
   const router = useRouter();
   const { cartItems, tableNumber } = useLocalSearchParams();
   const [waiterCode, setWaiterCode] = useState<string | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [name, setName] = useState<string>('');
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   // Fetch waiter code from AsyncStorage
   const fetchWaiterCode = async () => {
@@ -69,7 +83,7 @@ const OrderReviewScreen: React.FC = () => {
   // Submit the order to the backend or simulate submission
   const handleOrderSubmission = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a customer name.');
+      setAlertMessage('Please enter your name.');
       return;
     }
 
@@ -83,10 +97,10 @@ const OrderReviewScreen: React.FC = () => {
 
     try {
       console.log('Order Data:', payload);  // Simulate API call
-      Alert.alert('Success', 'Order submitted successfully!');
+      setAlertMessage('Order submitted successfully!');
       router.push('/');  // Navigate back to home or another screen
     } catch (error) {
-      Alert.alert('Error', 'Failed to submit the order.');
+      setAlertMessage('Failed to submit order. Please try again.');
     }
   };
 
@@ -142,6 +156,7 @@ const OrderReviewScreen: React.FC = () => {
           <Text style={styles.buttonText}>Order!</Text>
         </View>
       </TouchableOpacity>
+      {alertMessage && <CustomAlert message={alertMessage} onClose={() => setAlertMessage(null)} />}
     </View>
   );
 };
@@ -209,7 +224,7 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 16,
-    // fontWeight: 'bold',
+    fontWeight: 'bold',
     color: '#4C3A8C',
   },
   noteText: {
@@ -256,6 +271,35 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     color: '#FFF',
+    fontWeight: 'bold',
+  },
+  alertContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  alertBox: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  alertMessage: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  alertButton: {
+    backgroundColor: '#7B68EE',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  alertButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

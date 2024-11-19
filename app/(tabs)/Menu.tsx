@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, TouchableOpacity, FlatList, StyleSheet, Modal } from 'react-native';
+import { View, Text, TextInput, Button, TouchableOpacity, FlatList, StyleSheet, Modal, Image } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -46,6 +46,7 @@ const menuItemsWithCategory = menuItems.map((item) => ({
 }));
 
 
+
 export default function Menu() {
   const [tableNumber, setTableNumber] = useState<string>('0');
   const [isTableEntered, setIsTableEntered] = useState<boolean>(false);
@@ -57,6 +58,8 @@ export default function Menu() {
   const [currentItem, setCurrentItem] = useState<MenuItem | null>(null);
   const [keterangan, setKeterangan] = useState<string>('');
   const [cartItemsMenu, setCartItemsMenu] = useState([]);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+
   
 
 
@@ -172,7 +175,7 @@ export default function Menu() {
         onChangeText={setSearchTerm}
       />
       <View style={styles.categoryContainer}>
-        {['All', 'Food 🍽️', 'Beverage 🥤', 'Others 🎉'].map(category => (
+        {['All', 'Food', 'Beverage', 'Others'].map(category => (
           <TouchableOpacity
             key={category}
             onPress={() => setSelectedCategory(category.split(' ')[0])}
@@ -181,7 +184,33 @@ export default function Menu() {
               selectedCategory === category.split(' ')[0] && styles.selectedCategoryButton,
             ]}
           >
-            <Text style={styles.categoryButtonText}>{category}</Text>
+            {category === 'Others' ? (
+              <View style={styles.categoryContent}>
+                <Text style={styles.categoryButtonText}>Others</Text>
+                <Image
+                  source={require('../../assets/images/other_menu-removebg-preview.png')} // Replace with your image path
+                  style={styles.categoryImage}
+                />
+              </View>
+            ) : category === 'Food' ? (
+              <View style={styles.categoryContent}>
+                <Text style={styles.categoryButtonText}>Food</Text>
+                <Image
+                  source={require('../../assets/images/food_orange-removebg-preview.png')} // Replace with your image path
+                  style={styles.categoryImage}
+                />
+              </View>
+            ) : category === 'Beverage' ? (
+              <View style={styles.categoryContent}>
+                <Text style={styles.categoryButtonText}>Beverage</Text>
+                <Image
+                  source={require('../../assets/images/drink_orange1-removebg-preview.png')} // Replace with your image path
+                  style={styles.categoryImage}
+                />
+              </View>
+            ) : (
+              <Text style={styles.categoryButtonText}>{category}</Text>
+            )}
           </TouchableOpacity>
         ))}
       </View>
@@ -218,7 +247,7 @@ export default function Menu() {
           }}
           asChild
         >
-          <Button title="Continue" color="#7B68EE" />
+          <Button title="Continue" color="#7B68EE" disabled={totalQuantity === 0}/>
         </Link>
       </View>
 
@@ -392,5 +421,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+  },
+  categoryImage: {
+    width: 30,
+    height: 24,
+  },
+  categoryContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  alertContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  alertBox: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  alertMessage: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  alertButton: {
+    backgroundColor: '#7B68EE',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  alertButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  continueButton: {
+    backgroundColor: '#7B68EE',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  continueButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
