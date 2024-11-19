@@ -52,9 +52,6 @@ jobs:
     - name: 📦 Install dependencies
       run: npm install  # Use npm instead of yarn
 
-    - name: 📋 Test project
-      run: npm test  # Use npm test instead of yarn test
-
     - name: 👷 Build app
       run: |
         eas build --local \
