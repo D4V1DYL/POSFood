@@ -5,28 +5,49 @@ import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const menuItems = [
-    { itemId: 'A1', name: 'Iced Coffee', category: 'Beverage' },
-    { itemId: 'A2', name: 'Fruit Smoothie', category: 'Beverage' },
-    { itemId: 'B1', name: 'Croissant', category: 'Food' },
-    { itemId: 'B2', name: 'Salad', category: 'Food' },
-    { itemId: 'C1', name: 'Water', category: 'Beverage' },
-    { itemId: 'D1', name: 'Cake', category: 'Others' },
-  ];
+  { id: 745, code: '2022006', fullname: 'SMIRNOF ICE GREEN APLE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+  { id: 746, code: '2022007', fullname: 'SMIRNOF ICE ORANGE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+  { id: 747, code: '2022008', fullname: 'SMIRNOF ICE BLACKBERRY', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+  { id: 748, code: '2022009', fullname: 'SMIRNOF ICE POMEGRANATE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+];
   
 const menuItemsWithId = menuItems.map((item, index) => ({
     ...item,
     id: index + 1,
+    code: item.code,
+    fullname: item.fullname,
+    categoryType: item.quantityType,
   }));
+
+  const categorizeItem = (code: string): string => {
+  if (code.startsWith('1')) {
+    return 'Food';
+  } else if (code.startsWith('2')) {
+    return 'Beverage';
+  } else {
+    return 'Others';
+  }
+};
 
 interface MenuItem {
   id: number;
-  itemId: string; 
-  name: string;
+  code: string; 
+  fullname: string;
   category: string;
+  categoryType: string;
 }
 
+
+
+const menuItemsWithCategory = menuItems.map((item) => ({
+  ...item,
+  category: categorizeItem(item.code),
+  categoryType: item.quantityType,
+}));
+
+
 export default function Menu() {
-  const [tableNumber, setTableNumber] = useState<string>('');
+  const [tableNumber, setTableNumber] = useState<string>('0');
   const [isTableEntered, setIsTableEntered] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [cartItems, setCartItems] = useState<{ item: MenuItem; quantity: number; keterangan: string }[]>([]);
@@ -36,6 +57,7 @@ export default function Menu() {
   const [currentItem, setCurrentItem] = useState<MenuItem | null>(null);
   const [keterangan, setKeterangan] = useState<string>('');
   const [cartItemsMenu, setCartItemsMenu] = useState([]);
+  
 
 
 
@@ -48,13 +70,13 @@ export default function Menu() {
     if (currentItem) {
       // Check if the item already exists in the cart with the same note
       const existingItem = cartItems.find(cartItem =>
-        cartItem.item.itemId === currentItem.itemId && cartItem.keterangan === keterangan
+        cartItem.item.code === currentItem.code && cartItem.keterangan === keterangan
       );
   
       // If the item with the same note exists, update quantity
       if (existingItem) {
         setCartItems(cartItems.map(cartItem =>
-          cartItem.item.itemId === currentItem.itemId && cartItem.keterangan === keterangan
+          cartItem.item.code === currentItem.code && cartItem.keterangan === keterangan
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         ));
@@ -75,24 +97,44 @@ export default function Menu() {
   
 
   const removeItemFromCart = (item: MenuItem) => {
-    const existingItem = cartItems.find(cartItem => cartItem.item.itemId === item.itemId);
+    const existingItem = cartItems.find(cartItem => cartItem.item.code === item.code);
     if (existingItem && existingItem.quantity > 1) {
       setCartItems(cartItems.map(cartItem =>
-        cartItem.item.itemId === item.itemId
+        cartItem.item.code === item.code
           ? { ...cartItem, quantity: cartItem.quantity - 1 }
           : cartItem
       ));
     } else {
-      setCartItems(cartItems.filter(cartItem => cartItem.item.itemId !== item.itemId));
+      setCartItems(cartItems.filter(cartItem => cartItem.item.code !== item.code ));
     }
   };
 
   const totalQuantity = cartItems.reduce((sum, cartItem) => sum + cartItem.quantity, 0);
 
-  const filteredMenuItems = menuItemsWithId.filter(item =>
+  const totalQuantityPerItem = (itemId: string) => {
+    let total = 0;
+    cartItems.forEach(e => { 
+      if(e.item.code === itemId) {
+        total = total + e.quantity;
+      }
+    });
+    return total;
+  };
+
+  const filteredMenuItems = menuItemsWithCategory.filter(item =>
     (selectedCategory === 'All' || item.category === selectedCategory) &&
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    item.fullname.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const categorizeItem = (code: string): string => {
+    if (code.startsWith('1')) {
+      return 'Food';
+    } else if (code.startsWith('2')) {
+      return 'Beverage';
+    } else {
+      return 'Others';
+    }
+  };
 
   if (!isTableEntered) {
     return (
@@ -148,13 +190,13 @@ export default function Menu() {
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.menuItem}>
-            <Text style={styles.menuName}>{item.name}</Text>
+            <Text style={styles.menuName}>{item.fullname}</Text>
             <View style={styles.quantityContainer}>
               <TouchableOpacity onPress={() => removeItemFromCart(item)}>
                 <Ionicons name="remove-circle-outline" size={24} color="#4C3A8C" />              
                 </TouchableOpacity>
               <Text style={styles.quantityText}>
-                {cartItems.find(cartItem => cartItem.item.id === item.id)?.quantity || 0}
+                {totalQuantityPerItem(item.code.toString())}
               </Text>
               <TouchableOpacity onPress={() => addItemToCart(item)}>
                 <Ionicons name="add-circle-outline" size={24} color="#4C3A8C" />
@@ -285,7 +327,8 @@ const styles = StyleSheet.create({
   },
   menuName: {
     fontSize: 16,
-    color: '#A594F9',
+    color: '#563A9C',
+    fontWeight: 'bold',
   },
   quantityContainer: {
     flexDirection: 'row',

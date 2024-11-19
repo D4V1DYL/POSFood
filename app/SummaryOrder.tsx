@@ -6,9 +6,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Order {
   id: string;
-  itemId: number;
-  item: string;
-  note: string;
+  code: string; 
+  fullname: string;
+  category: string;
+  categoryType: string;
+  description: string;
   quantity: number;
 }
 
@@ -36,9 +38,11 @@ const OrderReviewScreen: React.FC = () => {
     if (cartItems) {
       const parsedCartItems = JSON.parse(cartItems as string);
       const initialOrders: Order[] = parsedCartItems.map((cartItem: any) => ({
-        item: cartItem.item.name,
-        itemId: cartItem.item.itemId,
-        note: cartItem.keterangan,
+        fullname: cartItem.item.fullname,
+        itemCode: cartItem.item.code,
+        description: cartItem.keterangan,
+        portion: cartItem.item.categoryType,
+        category: cartItem.item.category,
         quantity: cartItem.quantity,
       }));
 
@@ -72,9 +76,9 @@ const OrderReviewScreen: React.FC = () => {
     // Prepare data for submission
     const payload = {
       waiterCode,
-      tableNumber,
+      tableNumber: parseInt(tableNumber as string),
       customerName: name,
-      orders,
+      orderDetails:orders,
     };
 
     try {
@@ -89,8 +93,8 @@ const OrderReviewScreen: React.FC = () => {
   const renderItem = ({ item }: { item: Order }) => (
     <View style={styles.orderItem}>
       <View style={styles.itemDetails}>
-        <Text style={styles.itemText}>{item.item}</Text>
-        <Text style={styles.noteText}>{item.note}</Text>
+        <Text style={styles.itemText}>{item.fullname}</Text>
+        <Text style={styles.noteText}>{item.description}</Text>
       </View>
       <View style={styles.quantityContainer}>
         <TouchableOpacity onPress={() => handleQuantityChange(item.id, -1)}>
@@ -205,7 +209,7 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
     color: '#4C3A8C',
   },
   noteText: {
