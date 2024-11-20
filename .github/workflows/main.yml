@@ -1,4 +1,4 @@
-name: Build App and Upload APK as Artifact
+name: Build App
 on:
   workflow_dispatch:
     inputs:
