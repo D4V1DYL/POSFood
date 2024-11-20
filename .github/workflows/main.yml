@@ -62,25 +62,13 @@ jobs:
 
     - name: List files in app-build directory
       run: |
-        ls -R /Users/runner/work/POSFood/POSFood/app-build  # List recursively to confirm the APK location
-
-
-    - name: Find APK File
-      run: |
-        # Search for the APK file in the temp directory
-        APK_PATH=$(find /var/folders/g6/rgtlsw6n123b0gt5483s5_cm0000gn/T/eas-build-local-nodejs -name "*.apk" | head -n 1)
-        
-        if [ -z "$APK_PATH" ]; then
-          echo "No APK file found! Exiting."
-          exit 1
-        fi
-        
-        echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
+        ls -R ./app-build  # List recursively to confirm the APK location
 
     - name: Copy APK to workspace
       run: |
+        # Copy the APK from the known build location
         mkdir -p /Users/runner/work/POSFood/POSFood/app-build  # Ensure the app-build directory exists
-        cp /var/folders/g6/rgtlsw6n123b0gt5483s5_cm0000gn/T/eas-build-local-nodejs/be0b87b6-f04d-4071-9abc-082d3002bfb4/build/android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
+        cp ./android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
 
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
