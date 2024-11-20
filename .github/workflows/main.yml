@@ -67,8 +67,8 @@ jobs:
 
     - name: Find APK File
       run: |
-        # Find the APK file in the app-build directory
-        APK_PATH=$(find /Users/runner/work/POSFood/POSFood/app-build -name "*.apk" | head -n 1)
+        # Search for the APK file in the temp directory
+        APK_PATH=$(find /var/folders/g6/rgtlsw6n123b0gt5483s5_cm0000gn/T/eas-build-local-nodejs -name "*.apk" | head -n 1)
         
         if [ -z "$APK_PATH" ]; then
           echo "No APK file found! Exiting."
@@ -77,10 +77,15 @@ jobs:
         
         echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
 
+    - name: Copy APK to workspace
+      run: |
+        mkdir -p /Users/runner/work/POSFood/POSFood/app-build  # Ensure the app-build directory exists
+        cp /var/folders/g6/rgtlsw6n123b0gt5483s5_cm0000gn/T/eas-build-local-nodejs/be0b87b6-f04d-4071-9abc-082d3002bfb4/build/android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
+
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: pos-food-apk # Artifact name
-        path: ${{ env.APK_PATH }}  # Path to the APK file
-        if-no-files-found: warn
+        name: my-apk-file  # Artifact name
+        path: /Users/runner/work/POSFood/POSFood/app-build/app-release.apk  # Correct path to the APK file
+        if-no-files-found: warn  # Avoid failure if no file is found
         include-hidden-files: false
