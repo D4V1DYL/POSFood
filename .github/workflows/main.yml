@@ -59,7 +59,3 @@ jobs:
           --output=./app-build \
           --platform=${{ github.event.inputs.platform }} \
           --profile=${{ github.event.inputs.profile }}
-
-    - name: 🚢 Submit
-      if: ${{ github.event.inputs.should_submit }}
-      run: eas submit -p ${{ github.event.inputs.platform }} --profile ${{ github.event.inputs.profile }} --path app-build
