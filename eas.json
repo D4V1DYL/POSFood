@@ -15,17 +15,21 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle",
-        "credentialsSource": "local",
-        "keystore": {
-          "keystorePath": "./@david_y__POSFood.jks",
-          "keystorePassword": "f4ed2ffe211e75506e919fedfe01a122",
-          "keyAlias": "47a02da24095a5f9af0f0094d2336ac7",
-          "keyPassword": "dd9f709177d96b597fe65a87d205e527"
-        }
+        "credentialsSource": "local"
       }
     }
   },
   "submit": {
     "production": {}
+  },
+  "credentials": {
+    "android": {
+      "keystore": {
+        "keystorePath": "./@david_y__POSFood.jks",
+        "keystorePassword": "f4ed2ffe211e75506e919fedfe01a122",
+        "keyAlias": "47a02da24095a5f9af0f0094d2336ac7",
+        "keyPassword": "dd9f709177d96b597fe65a87d205e527"
+      }
+    }
   }
 }
