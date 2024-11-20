@@ -1,4 +1,4 @@
-name: Build App
+name: Build App and Upload APK as Artifact
 on:
   workflow_dispatch:
     inputs:
@@ -60,8 +60,14 @@ jobs:
           --platform=${{ github.event.inputs.platform }} \
           --profile=${{ github.event.inputs.profile }}
 
-    - name: Upload build as artifact
+    - name: Find APK File
+      run: |
+        # Assuming the APK is under `app-build`
+        APK_PATH=$(find ./app-build -name "*.apk" | head -n 1)  # Find the first APK file
+        echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV  # Store the APK path as an environment variable
+
+    - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: app-build
-        path: ./app-build/*  # Upload everything in the app-build directory
+        name: my-apk-file  # Artifact name
+        path: ${{ env.APK_PATH }}  # Path to the APK file
