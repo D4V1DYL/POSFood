@@ -62,12 +62,17 @@ jobs:
 
     - name: Find APK File
       run: |
-        # Assuming the APK is under `app-build`
-        APK_PATH=$(find ./app-build -name "*.apk" | head -n 1)  # Find the first APK file
-        echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV  # Store the APK path as an environment variable
+        APK_PATH=$(find ./app-build -name "*.apk" | head -n 1)
+            if [ -z "$APK_PATH" ]; then
+              echo "No APK file found! Exiting."
+              exit 1
+            fi
+            echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
 
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
       with:
         name: pos-food-apk # Artifact name
         path: ${{ env.APK_PATH }}  # Path to the APK file
+        if-no-files-found: warn
+        include-hidden-files: false
