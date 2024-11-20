@@ -13,7 +13,17 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
-const CustomAlert = ({ visible, onConfirm, onCancel }: { visible: boolean, onConfirm: () => void, onCancel: () => void }) => {
+const CustomAlert = ({
+  visible,
+  onConfirm,
+  onCancel,
+  itemToChange,
+}: {
+  visible: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  itemToChange: string; // Accept item to change (WaiterCode or ServerIP)
+}) => {
   return (
     <Modal
       transparent={true}
@@ -24,7 +34,9 @@ const CustomAlert = ({ visible, onConfirm, onCancel }: { visible: boolean, onCon
       <View style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Are you sure?</Text>
-          <Text style={styles.modalSubtitle}>You will change account.</Text>
+          <Text style={styles.modalSubtitle}>
+            You will change {itemToChange}.
+          </Text>
           <View style={styles.modalButtonContainer}>
             <TouchableOpacity style={styles.modalButton} onPress={onConfirm}>
               <Text style={styles.modalButtonText}>Yes</Text>
@@ -41,52 +53,76 @@ const CustomAlert = ({ visible, onConfirm, onCancel }: { visible: boolean, onCon
 
 export default function HomeScreen() {
   const [waiterCode, setWaiterCode] = useState<string>('');
+  const [serverIP, setServerIP] = useState<string>('');  
   const [isWaiterCodeEntered, setIsWaiterCodeEntered] = useState<boolean>(false);
+  const [isServerIPEntered, setIsServerIPEntered] = useState<boolean>(false); 
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [itemToChange, setItemToChange] = useState<string>(''); 
 
   useEffect(() => {
-    const loadWaiterCode = async () => {
+    const loadData = async () => {
       const savedWaiterCode = await AsyncStorage.getItem('waiterCode');
+      const savedServerIP = await AsyncStorage.getItem('serverBEIP');
       if (savedWaiterCode) {
         setWaiterCode(savedWaiterCode);
         setIsWaiterCodeEntered(true);
       }
+      if (savedServerIP) {
+        setServerIP(savedServerIP);
+        setIsServerIPEntered(true);
+      }
     };
-    loadWaiterCode();
+    loadData();
   }, []);
 
-  // Handle code confirmation
-  const handleConfirmWaiterCode = async () => {
+  const handleConfirm = async () => {
     if (waiterCode.trim()) {
       await AsyncStorage.setItem('waiterCode', waiterCode);
       setIsWaiterCodeEntered(true);
     }
+    if (serverIP.trim()) {
+      await AsyncStorage.setItem('serverBEIP', serverIP);
+      setIsServerIPEntered(true);
+    }
   };
 
-  // Handle change user action
+  // Handle change user action - show modal
   const handleChangeUser = () => {
+    setItemToChange('Waiter Code');
     setIsModalVisible(true);
   };
 
-  const handleConfirmChangeUser = async () => {
-    await AsyncStorage.removeItem('waiterCode');
-    setWaiterCode('');
-    setIsWaiterCodeEntered(false);
+  // Handle change server IP action - show modal
+  const handleChangeServerIP = () => {
+    setItemToChange('Server IP');
+    setIsModalVisible(true);
+  };
+
+  const handleConfirmChange = async () => {
+    if (itemToChange === 'Waiter Code') {
+      await AsyncStorage.removeItem('waiterCode');
+      setWaiterCode('');
+      setIsWaiterCodeEntered(false);
+    } else if (itemToChange === 'Server IP') {
+      await AsyncStorage.removeItem('serverBEIP');
+      setServerIP('');
+      setIsServerIPEntered(false);
+    }
     setIsModalVisible(false);
   };
 
-  const handleCancelChangeUser = () => {
+  const handleCancelChange = () => {
     setIsModalVisible(false);
   };
 
-  if (!isWaiterCodeEntered) {
+  if (!isWaiterCodeEntered || !isServerIPEntered) {
     return (
       <View style={styles.container}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.centeredContainer}
         >
-          <Text style={styles.title}>Enter Your Waiter Code</Text>
+          <Text style={styles.title}>Enter Your Waiter Code & Server IP</Text>
           <View style={styles.inputContainer}>
             <Ionicons name="key-outline" size={24} color="#6D5F9A" style={styles.icon} />
             <TextInput
@@ -98,7 +134,18 @@ export default function HomeScreen() {
               keyboardType="default"
             />
           </View>
-          <TouchableOpacity style={styles.button} onPress={handleConfirmWaiterCode}>
+          <View style={styles.inputContainer}>
+            <Ionicons name="server-outline" size={24} color="#6D5F9A" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter server IP"
+              placeholderTextColor="#A5A1C2"
+              value={serverIP}
+              onChangeText={setServerIP}
+              keyboardType="default"
+            />
+          </View>
+          <TouchableOpacity style={styles.button} onPress={handleConfirm}>
             <Text style={styles.buttonText}>Confirm</Text>
           </TouchableOpacity>
         </KeyboardAvoidingView>
@@ -106,31 +153,36 @@ export default function HomeScreen() {
     );
   }
 
-  // Welcome screen after entering the code
   return (
     <View style={styles.container}>
       <View style={styles.centeredWelcomeContainer}>
-        {/* Change user button now wraps both icon and text */}
         <TouchableOpacity style={styles.changeUserButton} onPress={handleChangeUser}>
           <Ionicons name="person" size={24} color="#FFF" />
           <Text style={styles.changeUserText}>Change User</Text>
         </TouchableOpacity>
-          <Image
-            source={require('../../assets/images/logo_billiard-removebg-preview.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+        <TouchableOpacity style={styles.changeServerButton} onPress={handleChangeServerIP}>
+          <Ionicons name="server-outline" size={24} color="#FFF" />
+          <Text style={styles.changeUserText}>Change Server IP</Text>
+        </TouchableOpacity>
+        <Image
+          source={require('../../assets/images/logo_billiard-removebg-preview.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.welcomeText}>Welcome, {waiterCode}!</Text>
+        <Text style={styles.subText}>Server IP: {serverIP}</Text>
         <Text style={styles.subText}>Ready to take some orders?</Text>
       </View>
       <CustomAlert
         visible={isModalVisible}
-        onConfirm={handleConfirmChangeUser}
-        onCancel={handleCancelChangeUser}
+        onConfirm={handleConfirmChange}
+        onCancel={handleCancelChange}
+        itemToChange={itemToChange} // Pass which item is being changed to the modal
       />
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -152,7 +204,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 17.1,
     fontWeight: '700',
     color: '#4C3A8C',
     marginBottom: 20,
@@ -193,7 +245,7 @@ const styles = StyleSheet.create({
   centeredWelcomeContainer: {
     alignItems: 'center',
     paddingHorizontal: 20,
-    bottom:85
+    bottom: 85,
   },
   welcomeText: {
     fontSize: 28,
@@ -220,8 +272,18 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 50,
     elevation: 5,
-    bottom: 60,
-    right: 90,
+    bottom: 20,
+    right: 105,
+  },
+  changeServerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6A5ACD',
+    padding: 10,
+    borderRadius: 50,
+    elevation: 5,
+    bottom: 65,
+    left: 85,
   },
   changeUserText: {
     marginLeft: 10,
@@ -236,23 +298,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
-    width: '80%',
     backgroundColor: '#FFF',
-    borderRadius: 10,
     padding: 20,
+    borderRadius: 10,
+    width: '80%',
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '600',
     color: '#4C3A8C',
-    marginBottom: 10,
   },
   modalSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#6D5F9A',
     marginBottom: 20,
-    textAlign: 'center',
   },
   modalButtonContainer: {
     flexDirection: 'row',
@@ -260,16 +320,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalButton: {
-    flex: 1,
     backgroundColor: '#6A5ACD',
     borderRadius: 10,
     paddingVertical: 10,
-    marginHorizontal: 5,
+    paddingHorizontal: 20,
+    width: '45%',
     alignItems: 'center',
   },
   modalButtonText: {
-    fontSize: 16,
     color: '#FFF',
+    fontSize: 18,
     fontWeight: '600',
   },
 });

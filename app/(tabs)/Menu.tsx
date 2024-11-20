@@ -3,31 +3,20 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, TouchableOpacity, FlatList, StyleSheet, Modal, Image } from 'react-native';
 import { Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const menuItems = [
-  { id: 745, code: '2022006', fullname: 'SMIRNOF ICE GREEN APLE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-  { id: 746, code: '2022007', fullname: 'SMIRNOF ICE ORANGE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-  { id: 747, code: '2022008', fullname: 'SMIRNOF ICE BLACKBERRY', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-  { id: 748, code: '2022009', fullname: 'SMIRNOF ICE POMEGRANATE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-];
+// const menuItems = [
+//   { id: 745, code: '2022006', fullname: 'SMIRNOF ICE GREEN APLE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+//   { id: 746, code: '2022007', fullname: 'SMIRNOF ICE ORANGE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+//   { id: 747, code: '2022008', fullname: 'SMIRNOF ICE BLACKBERRY', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+//   { id: 748, code: '2022009', fullname: 'SMIRNOF ICE POMEGRANATE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
+// ];
+
   
-const menuItemsWithId = menuItems.map((item, index) => ({
-    ...item,
-    id: index + 1,
-    code: item.code,
-    fullname: item.fullname,
-    categoryType: item.quantityType,
-  }));
 
-  const categorizeItem = (code: string): string => {
-  if (code.startsWith('1')) {
-    return 'Food';
-  } else if (code.startsWith('2')) {
-    return 'Beverage';
-  } else {
-    return 'Others';
-  }
-};
+
+
 
 interface MenuItem {
   id: number;
@@ -37,13 +26,6 @@ interface MenuItem {
   categoryType: string;
 }
 
-
-
-const menuItemsWithCategory = menuItems.map((item) => ({
-  ...item,
-  category: categorizeItem(item.code),
-  categoryType: item.quantityType,
-}));
 
 
 
@@ -59,6 +41,64 @@ export default function Menu() {
   const [keterangan, setKeterangan] = useState<string>('');
   const [cartItemsMenu, setCartItemsMenu] = useState([]);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]); // New state for menu items
+  const [serverIP, setServerIP] = useState<string>('');
+
+  const stage: string = 'dev'; // 'Local' or 'Production'
+
+
+  const categorizeItem = (code: string): string => {
+    if (code.startsWith('1')) {
+      return 'Food';
+    } else if (code.startsWith('2')) {
+      return 'Beverage';
+    } else {
+      return 'Others';
+    }
+  };
+
+
+  useEffect(() => {
+    const fetchServerIpAndMenuItems = async () => {
+      try {
+        // Fetch the server IP from AsyncStorage
+        const getBEIP = await AsyncStorage.getItem('serverBEIP');
+        const storedServerIP = `http://${getBEIP}/menu/list/all`;
+        setServerIP(storedServerIP);
+  
+        // Determine the correct API URL
+        const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : storedServerIP;
+  
+        // Fetch the menu items
+        const response = await axios.get(API_URL);
+        setMenuItems(response.data.map((item: any) => ({
+          id: item.id,
+          code: item.code,
+          fullname: item.fullName,
+          category: categorizeItem(item.code),
+          categoryType: item.quantityType,
+        })));
+      } catch (error) {
+        console.error('Failed to fetch menu items', error);
+      }
+    };
+  
+    fetchServerIpAndMenuItems();
+  }, []); // Empty dependency arra
+
+  const menuItemsWithId = menuItems.map((item, index) => ({
+    ...item,
+    id: index + 1,
+    code: item.code,
+    fullname: item.fullname,
+    categoryType: item.categoryType,
+  }));
+
+  const menuItemsWithCategory = menuItems.map((item) => ({
+    ...item,
+    category: categorizeItem(item.code),
+    categoryType: item.categoryType,
+  }));
 
   
 
@@ -128,16 +168,6 @@ export default function Menu() {
     (selectedCategory === 'All' || item.category === selectedCategory) &&
     item.fullname.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const categorizeItem = (code: string): string => {
-    if (code.startsWith('1')) {
-      return 'Food';
-    } else if (code.startsWith('2')) {
-      return 'Beverage';
-    } else {
-      return 'Others';
-    }
-  };
 
   if (!isTableEntered) {
     return (

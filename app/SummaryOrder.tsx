@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert, M
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 interface Order {
   id: string;
@@ -13,6 +14,9 @@ interface Order {
   description: string;
   quantity: number;
 }
+
+const API_URL = 'https://itdgyec.localto.net/order/save';
+
 
 const CustomAlert: React.FC<{ message: string; onClose: () => void }> = ({ message, onClose }) => (
   <Modal transparent={true} animationType="slide" visible={true}>
@@ -34,18 +38,23 @@ const OrderReviewScreen: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [name, setName] = useState<string>('');
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [serverIP, setServerIP] = useState<string>('');
+
+
+  const stage :string = 'dev'// 'Local' or 'Production'
 
   // Fetch waiter code from AsyncStorage
   const fetchWaiterCode = async () => {
     try {
       const storedWaiterCode = await AsyncStorage.getItem('waiterCode');
-      if (storedWaiterCode) {
-        setWaiterCode(storedWaiterCode);
-      }
+      const storedServerIP = await AsyncStorage.getItem('serverIP');
+      if (storedWaiterCode) setWaiterCode(storedWaiterCode);
+      if (storedServerIP) setServerIP(storedServerIP);
     } catch (error) {
       console.error('Error fetching waiterCode:', error);
     }
   };
+
 
   // Parse cart items and initialize orders on component mount
   useEffect(() => {
@@ -92,11 +101,17 @@ const OrderReviewScreen: React.FC = () => {
       waiterCode,
       tableNumber: parseInt(tableNumber as string),
       customerName: name,
-      orderDetails:orders,
+      orderDetails:orders.map(({ id, ...rest }) => rest),
     };
 
     try {
-      console.log('Order Data:', payload);  // Simulate API call
+      const getBEIP = await AsyncStorage.getItem('serverBEIP');
+      const storedServerIP = `http://${getBEIP}/menu/list/all`;
+      setServerIP(storedServerIP);
+
+      // Determine the correct API URL
+      const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : storedServerIP;
+      const response = await axios.post(API_URL, payload);
       setAlertMessage('Order submitted successfully!');
       router.push('/');  // Navigate back to home or another screen
     } catch (error) {
