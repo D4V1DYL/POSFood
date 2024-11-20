@@ -69,5 +69,5 @@ jobs:
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: my-apk-file  # Artifact name
+        name: pos-food-apk # Artifact name
         path: ${{ env.APK_PATH }}  # Path to the APK file
