@@ -62,16 +62,21 @@ jobs:
 
     - name: List files in app-build directory
       run: |
-        ls -R ./app-build  # Recursively list files to see where the APK is
+        ls -R /Users/runner/work/POSFood/POSFood/app-build  # List recursively to confirm the APK location
+
 
     - name: Find APK File
       run: |
-        APK_PATH=$(find ./app-build -name "*.apk" | head -n 1)
-            if [ -z "$APK_PATH" ]; then
-              echo "No APK file found! Exiting."
-              exit 1
-            fi
-            echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
+        # Find the APK file in the app-build directory
+        APK_PATH=$(find /Users/runner/work/POSFood/POSFood/app-build -name "*.apk" | head -n 1)
+        
+        if [ -z "$APK_PATH" ]; then
+          echo "No APK file found! Exiting."
+          exit 1
+        fi
+        
+        echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
+
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
       with:
