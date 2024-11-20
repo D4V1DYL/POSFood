@@ -1,12 +1,37 @@
-name: Build and Upload APK
-
+name: Build App
 on:
   workflow_dispatch:
-
+    inputs:
+      os:
+        type: choice
+        description: OS to build on. Ubuntu is faster, MacOS supports iOS builds
+        options:
+          - macos-latest
+          - ubuntu-latest
+      platform:
+        type: choice
+        description: Platform to build for
+        options:
+          - android
+          - ios
+      profile:
+        type: choice
+        description: Build profile to use
+        options:
+          - development
+          - preview
+          - production
+      should_submit:
+        type: boolean
+        description: Whether to perform the submit step
+        required: true
+        default: false
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ github.event.inputs.os }}
+    strategy:
+      matrix:
+        node: [18.x]  # Specify Node.js version
     steps:
     - name: 🏗 Setup repo
       uses: actions/checkout@v2
@@ -14,7 +39,8 @@ jobs:
     - name: 🏗 Setup Node
       uses: actions/setup-node@v2
       with:
-        node-version: '18.x'
+        node-version: ${{ matrix.node }}
+        cache: npm  # Use npm cache instead of yarn
 
     - name: 🏗 Setup Expo and EAS
       uses: expo/expo-github-action@v7
@@ -24,15 +50,15 @@ jobs:
         eas-version: latest
 
     - name: 📦 Install dependencies
-      run: npm install
+      run: npm install  # Use npm instead of yarn
 
     - name: 👷 Build app
       run: |
         eas build --local \
           --non-interactive \
           --output=./app-build \
-          --platform=android \
-          --profile=production
+          --platform=${{ github.event.inputs.platform }} \
+          --profile=${{ github.event.inputs.profile }}
 
     - name: List files in app-build directory
       run: |
@@ -40,24 +66,16 @@ jobs:
 
     - name: Find APK File
       run: |
-        # Find the APK file in the build directory
         APK_PATH=$(find ./app-build -name "*.apk" | head -n 1)
-        
-        # If no APK is found, exit with an error
-        if [ -z "$APK_PATH" ]; then
-          echo "No APK file found! Exiting."
-          exit 1
-        fi
-        
-        # Save APK_PATH for later use
-        echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
-
+            if [ -z "$APK_PATH" ]; then
+              echo "No APK file found! Exiting."
+              exit 1
+            fi
+            echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: my-apk-file  # The name of the artifact
+        name: pos-food-apk # Artifact name
         path: ${{ env.APK_PATH }}  # Path to the APK file
-        if-no-files-found: warn  # Avoid failure if the file is not found
+        if-no-files-found: warn
         include-hidden-files: false
-      env:
-        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
