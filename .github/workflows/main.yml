@@ -54,11 +54,14 @@ jobs:
 
     - name: 👷 Build app
       run: |
-        eas build --local \
-          --non-interactive \
-          --output=./app-build \
+        eas build \
           --platform=${{ github.event.inputs.platform }} \
-          --profile=${{ github.event.inputs.profile }}
+          --profile=${{ github.event.inputs.profile }} \
+          --non-interactive \
+          --local \
+          --output=./app-build \
+          --env EXAMPLE_VAR=value
+
 
     - name: 🚢 Submit
       if: ${{ github.event.inputs.should_submit }}
