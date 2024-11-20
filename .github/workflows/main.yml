@@ -59,3 +59,9 @@ jobs:
           --output=./app-build \
           --platform=${{ github.event.inputs.platform }} \
           --profile=${{ github.event.inputs.profile }}
+
+    - name: Upload build as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-build
+        path: ./app-build/*  # Upload everything in the app-build directory
