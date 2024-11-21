@@ -1,4 +1,5 @@
 name: Build App
+
 on:
   workflow_dispatch:
     inputs:
@@ -26,12 +27,13 @@ on:
         description: Whether to perform the submit step
         required: true
         default: false
+
 jobs:
   build:
     runs-on: ${{ github.event.inputs.os }}
     strategy:
       matrix:
-        node: [18.x]  # Specify Node.js version
+        node: [18.x] # Specify Node.js version
     steps:
     - name: 🏗 Setup repo
       uses: actions/checkout@v2
@@ -40,7 +42,7 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node }}
-        cache: npm  # Use npm cache instead of yarn
+        cache: npm # Use npm cache instead of yarn
 
     - name: 🏗 Setup Expo and EAS
       uses: expo/expo-github-action@v7
@@ -50,7 +52,7 @@ jobs:
         eas-version: latest
 
     - name: 📦 Install dependencies
-      run: npm install  # Use npm instead of yarn
+      run: npm install
 
     - name: 👷 Build app
       run: |
@@ -60,22 +62,26 @@ jobs:
           --platform=${{ github.event.inputs.platform }} \
           --profile=${{ github.event.inputs.profile }}
 
-    - name: List files in app-build directory
+    - name: Copy the APK from the known build location
       run: |
-        ls -R ./app-build  # List recursively to confirm the APK location
+        # Create the directory only if it doesn't already exist
+        if [ ! -d "/Users/runner/work/POSFood/POSFood/app-build" ]; then
+          mkdir -p /Users/runner/work/POSFood/POSFood/app-build
+        fi
+        cp ./android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
+      shell: bash
 
-  - name: Copy the APK from the known build location
-  run: |
-    # Create the directory only if it doesn't already exist
-    if [ ! -d "/Users/runner/work/POSFood/POSFood/app-build" ]; then
-      mkdir -p /Users/runner/work/POSFood/POSFood/app-build
-    fi
-    cp ./android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
+    - name: Find APK File
+      run: |
+        APK_PATH=$(find /Users/runner/work/POSFood/POSFood/app-build -name "*.apk" | head -n 1)
+        if [ -z "$APK_PATH" ]; then
+          echo "No APK file found! Exiting."
+          exit 1
+        fi
+        echo "APK_PATH=${APK_PATH}" >> $GITHUB_ENV
 
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: my-apk-file  # Artifact name
-        path: /Users/runner/work/POSFood/POSFood/app-build/app-release.apk  # Correct path to the APK file
-        if-no-files-found: warn  # Avoid failure if no file is found
-        include-hidden-files: false
+        name: pos-food-apk
+        path: ${{ env.APK_PATH }}
