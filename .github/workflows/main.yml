@@ -33,7 +33,7 @@ jobs:
     runs-on: ${{ github.event.inputs.os }}
     strategy:
       matrix:
-        node: [18.x]  # Specify Node.js version
+        node: [18.x]
 
     steps:
       - name: 🏗 Setup repository
@@ -63,11 +63,20 @@ jobs:
             --platform=${{ github.event.inputs.platform }} \
             --profile=${{ github.event.inputs.profile }}
 
-      - name: 🧐 List files in app-build directory
-        run: ls -al ./app-build
+      - name: 🧐 Rename built APK
+        run: |
+          APK_PATH=$(find ./app-build -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "No APK file found in app-build directory."
+            exit 1
+          fi
+          mv "$APK_PATH" ./postfood.apk
+
+      - name: 🧐 List files to verify renaming
+        run: ls -al ./postfood.apk
 
       - name: 📤 Upload APK as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: posfood-apk
-          path: ./app-build
+          name: postfood-apk
+          path: ./postfood.apk
