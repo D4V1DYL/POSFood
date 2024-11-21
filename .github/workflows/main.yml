@@ -36,18 +36,15 @@ jobs:
         node: [18.x]  # Specify Node.js version
 
     steps:
-      # Step 1: Checkout the repository
       - name: 🏗 Setup repository
         uses: actions/checkout@v2
 
-      # Step 2: Setup Node.js
       - name: 🏗 Setup Node
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-          cache: npm  # Use npm cache
+          cache: npm
 
-      # Step 3: Setup Expo and EAS CLI
       - name: 🏗 Setup Expo and EAS
         uses: expo/expo-github-action@v7
         with:
@@ -55,11 +52,9 @@ jobs:
           expo-version: latest
           eas-version: latest
 
-      # Step 4: Install dependencies
       - name: 📦 Install dependencies
-        run: npm install  # Install dependencies using npm
+        run: npm install
 
-      # Step 5: Build APK using EAS
       - name: 👷 Build APK
         run: |
           eas build --local \
@@ -68,15 +63,14 @@ jobs:
             --platform=${{ github.event.inputs.platform }} \
             --profile=${{ github.event.inputs.profile }}
 
-      # Step 6: Verify Build and Copy APK
       - name: 📦 Verify and Copy APK
         run: |
-          # Create the directory only if it doesn't already exist
+          # Ensure app-build directory exists
           if [ ! -d "/Users/runner/work/POSFood/POSFood/app-build" ]; then
             mkdir -p /Users/runner/work/POSFood/POSFood/app-build
           fi
 
-          # Copy APK to the app-build directory if it exists
+          # Copy APK if exists
           if [ -f "./android/app/build/outputs/apk/release/app-release.apk" ]; then
             cp ./android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
           else
@@ -84,9 +78,8 @@ jobs:
             exit 1
           fi
 
-      # Step 7: Upload APK as GitHub Artifact
       - name: 📤 Upload APK to GitHub Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: pos-food-apk  # Name of the artifact
-          path: /Users/runner/work/POSFood/POSFood/app-build/app-release.apk  # Full path to the APK
+          name: pos-food-apk
+          path: /Users/runner/work/POSFood/POSFood/app-build/app-release.apk
