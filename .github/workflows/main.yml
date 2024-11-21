@@ -65,18 +65,17 @@ jobs:
 
       - name: 📦 Verify and Copy APK
         run: |
-          # Ensure app-build directory exists
-          if [ ! -d "/Users/runner/work/POSFood/POSFood/app-build" ]; then
-            mkdir -p /Users/runner/work/POSFood/POSFood/app-build
-          fi
+          # Create app-build directory if it doesn't exist
+          mkdir -p /Users/runner/work/POSFood/POSFood/app-build
 
-          # Copy APK if exists
+          # Copy APK if it exists
           if [ -f "./android/app/build/outputs/apk/release/app-release.apk" ]; then
             cp ./android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
           else
             echo "APK file not found in ./android/app/build/outputs/apk/release/! Exiting."
             exit 1
           fi
+
 
       - name: 📤 Upload APK to GitHub Artifacts
         uses: actions/upload-artifact@v3
