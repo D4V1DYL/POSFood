@@ -64,11 +64,13 @@ jobs:
       run: |
         ls -R ./app-build  # List recursively to confirm the APK location
 
-    - name: Copy APK to workspace
-      run: |
-        # Copy the APK from the known build location
-        mkdir -p /Users/runner/work/POSFood/POSFood/app-build  # Ensure the app-build directory exists
-        cp ./android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
+  - name: Copy the APK from the known build location
+  run: |
+    # Create the directory only if it doesn't already exist
+    if [ ! -d "/Users/runner/work/POSFood/POSFood/app-build" ]; then
+      mkdir -p /Users/runner/work/POSFood/POSFood/app-build
+    fi
+    cp ./android/app/build/outputs/apk/release/app-release.apk /Users/runner/work/POSFood/POSFood/app-build/
 
     - name: Upload APK to GitHub as Artifact
       uses: actions/upload-artifact@v3
