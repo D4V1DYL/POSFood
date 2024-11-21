@@ -65,9 +65,14 @@ jobs:
 
       - name: 🧐 List files in app-build directory
         run: ls -al ./app-build
+        
+      - name: 📝 Rename APK to posfood.apk
+        run: |
+          mv ./app-build ./posfood.apk
+
 
       - name: 📤 Upload APK as artifact
         uses: actions/upload-artifact@v3
         with:
           name: posfood-apk
-          path: ./app-build
+          path: ./postfood.apk
