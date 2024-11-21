@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, TouchableOpacity, FlatList, StyleSheet, Modal, Image } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -43,6 +43,8 @@ export default function Menu() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]); // New state for menu items
   const [serverIP, setServerIP] = useState<string>('');
+  const [waiterCode, setWaiterCode] = useState<string | null>(null);
+
 
   const stage: string = 'dev'; // 'Local' or 'Production'
 
@@ -57,6 +59,26 @@ export default function Menu() {
     }
   };
 
+
+
+
+    useFocusEffect(
+      React.useCallback(() => {
+        const fetchStoredData = async () => {
+          try {
+            const storedServerIP = await AsyncStorage.getItem('serverBEIP');
+            const storedWaiterCode = await AsyncStorage.getItem('waiterCode');
+            if (storedServerIP) setServerIP(storedServerIP);
+            if (storedWaiterCode) setWaiterCode(storedWaiterCode);
+          } catch (error) {
+            console.error('Error fetching stored data:', error);
+          }
+        };
+        fetchStoredData();
+      }, [serverIP, waiterCode])
+    );
+
+  
 
   useEffect(() => {
     const fetchServerIpAndMenuItems = async () => {
@@ -169,142 +191,153 @@ export default function Menu() {
     item.fullname.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!isTableEntered) {
+
+  if (!waiterCode || !serverIP) {
     return (
-      <View style={[styles.container, styles.centeredContainer]}>
-        <Text style={styles.title}>Enter Table Number</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter table number"
-          keyboardType="numeric"
-          value={tableNumber}
-          onChangeText={setTableNumber}
-        />
-        <Button title="Confirm" onPress={() => setIsTableEntered(true)} color="#7B68EE" />
+      <View style={styles.lockedContainer}>
+        <Text style={styles.lockedText}>Access Denied. Please set the Waiter Code and Server IP.</Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Make Your Selection!</Text>
-      </View>
-
-      {isTableEntered && (
-        <View style={styles.tableInfo}>
-          <Text style={styles.tableText}>You’re at table {tableNumber}</Text>
-          <Button title="Change Table" onPress={() => setIsTableEntered(false)} color="#7B68EE" />
+    if (!isTableEntered) {
+      return (
+        <View style={[styles.container, styles.centeredContainer]}>
+          <Text style={styles.title}>Enter Table Number</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter table number"
+            keyboardType="numeric"
+            value={tableNumber}
+            onChangeText={setTableNumber}
+          />
+          <Button title="Confirm" onPress={() => setIsTableEntered(true)} color="#7B68EE" />
         </View>
-      )}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Search menu..."
-        value={searchTerm}
-        onChangeText={setSearchTerm}
-      />
-      <View style={styles.categoryContainer}>
-        {['All', 'Food', 'Beverage', 'Others'].map(category => (
-          <TouchableOpacity
-            key={category}
-            onPress={() => setSelectedCategory(category.split(' ')[0])}
-            style={[
-              styles.categoryButton,
-              selectedCategory === category.split(' ')[0] && styles.selectedCategoryButton,
-            ]}
-          >
-            {category === 'Others' ? (
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryButtonText}>Others</Text>
-                <Image
-                  source={require('../../assets/images/other_menu-removebg-preview.png')} // Replace with your image path
-                  style={styles.categoryImage}
-                />
-              </View>
-            ) : category === 'Food' ? (
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryButtonText}>Food</Text>
-                <Image
-                  source={require('../../assets/images/food_orange-removebg-preview.png')} // Replace with your image path
-                  style={styles.categoryImage}
-                />
-              </View>
-            ) : category === 'Beverage' ? (
-              <View style={styles.categoryContent}>
-                <Text style={styles.categoryButtonText}>Beverage</Text>
-                <Image
-                  source={require('../../assets/images/drink_orange1-removebg-preview.png')} // Replace with your image path
-                  style={styles.categoryImage}
-                />
-              </View>
-            ) : (
-              <Text style={styles.categoryButtonText}>{category}</Text>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-      <FlatList
-        data={filteredMenuItems}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.menuItem}>
-            <Text style={styles.menuName}>{item.fullname}</Text>
-            <View style={styles.quantityContainer}>
-              <TouchableOpacity onPress={() => removeItemFromCart(item)}>
-                <Ionicons name="remove-circle-outline" size={24} color="#4C3A8C" />              
-                </TouchableOpacity>
-              <Text style={styles.quantityText}>
-                {totalQuantityPerItem(item.code.toString())}
-              </Text>
-              <TouchableOpacity onPress={() => addItemToCart(item)}>
-                <Ionicons name="add-circle-outline" size={24} color="#4C3A8C" />
-              </TouchableOpacity>
-            </View>
+      );
+    }
+  
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Make Your Selection!</Text>
+        </View>
+  
+        {isTableEntered && (
+          <View style={styles.tableInfo}>
+            <Text style={styles.tableText}>You’re at table {tableNumber}</Text>
+            <Button title="Change Table" onPress={() => setIsTableEntered(false)} color="#7B68EE" />
           </View>
         )}
-      />
-
-      <View style={styles.bottomBar}>
-        <Text style={styles.cartText}>Total Items: {totalQuantity}</Text>
-        <Link
-          href={{
-            pathname: '/SummaryOrder',
-            params: { 
-                cartItems: JSON.stringify(cartItems),
-                tableNumber: tableNumber || '00'
-            }
-          }}
-          asChild
+  
+        <TextInput
+          style={styles.input}
+          placeholder="Search menu..."
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+        />
+        <View style={styles.categoryContainer}>
+          {['All', 'Food', 'Beverage', 'Others'].map(category => (
+            <TouchableOpacity
+              key={category}
+              onPress={() => setSelectedCategory(category.split(' ')[0])}
+              style={[
+                styles.categoryButton,
+                selectedCategory === category.split(' ')[0] && styles.selectedCategoryButton,
+              ]}
+            >
+              {category === 'Others' ? (
+                <View style={styles.categoryContent}>
+                  <Text style={styles.categoryButtonText}>Others</Text>
+                  <Image
+                    source={require('../../assets/images/other_menu-removebg-preview.png')} // Replace with your image path
+                    style={styles.categoryImage}
+                  />
+                </View>
+              ) : category === 'Food' ? (
+                <View style={styles.categoryContent}>
+                  <Text style={styles.categoryButtonText}>Food</Text>
+                  <Image
+                    source={require('../../assets/images/food_orange-removebg-preview.png')} // Replace with your image path
+                    style={styles.categoryImage}
+                  />
+                </View>
+              ) : category === 'Beverage' ? (
+                <View style={styles.categoryContent}>
+                  <Text style={styles.categoryButtonText}>Beverage</Text>
+                  <Image
+                    source={require('../../assets/images/drink_orange1-removebg-preview.png')} // Replace with your image path
+                    style={styles.categoryImage}
+                  />
+                </View>
+              ) : (
+                <Text style={styles.categoryButtonText}>{category}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+        <FlatList
+          data={filteredMenuItems}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.menuItem}>
+              <Text style={styles.menuName}>{item.fullname.toUpperCase()}</Text>
+              <View style={styles.quantityContainer}>
+                <TouchableOpacity onPress={() => removeItemFromCart(item)}>
+                  <Ionicons name="remove-circle-outline" size={30} color="#4C3A8C" />              
+                  </TouchableOpacity>
+                <Text style={styles.quantityText}>
+                  {totalQuantityPerItem(item.code.toString())}
+                </Text>
+                <TouchableOpacity onPress={() => addItemToCart(item)}>
+                  <Ionicons name="add-circle-outline" size={30} color="#4C3A8C" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        />
+  
+        <View style={styles.bottomBar}>
+          <Text style={styles.cartText}>Total Items: {totalQuantity}</Text>
+          <Link
+            href={{
+              pathname: '/SummaryOrder',
+              params: { 
+                  cartItems: JSON.stringify(cartItems),
+                  tableNumber: tableNumber || '00'
+              }
+            }}
+            asChild
+          >
+            <Button title="Continue" color="#7B68EE" disabled={totalQuantity === 0}/>
+          </Link>
+        </View>
+  
+        <Modal
+          visible={isModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setIsModalVisible(false)}
         >
-          <Button title="Continue" color="#7B68EE" disabled={totalQuantity === 0}/>
-        </Link>
-      </View>
-
-      <Modal
-        visible={isModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Item</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Enter Notes"
-              value={keterangan}
-              onChangeText={setKeterangan}
-            />
-            <View style={styles.modalButtons}>
-              <Button title="Cancel" onPress={() => setIsModalVisible(false)} color="#FF6347" />
-              <Button title="Add" onPress={handleAddItem} color="#7B68EE" />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Add Item</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Enter Notes"
+                value={keterangan}
+                onChangeText={setKeterangan}
+              />
+              <View style={styles.modalButtons}>
+                <Button title="Cancel" onPress={() => setIsModalVisible(false)} color="#FF6347" />
+                <Button title="Add" onPress={handleAddItem} color="#7B68EE" />
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
-  );
+        </Modal>
+      </View>
+    );
+
+
 }
 
 const styles = StyleSheet.create({
@@ -376,7 +409,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   menuItem: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
@@ -404,7 +437,7 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     marginHorizontal: 8,
-    fontSize: 16,
+    fontSize: 18,
   },
   bottomBar: {
     backgroundColor: '#A594F9',
@@ -500,5 +533,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  lockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5EFFF',
+  },
+  lockedText: {
+    fontSize: 18,
+    color: '#A594F9',
+    textAlign: 'center',
+    padding: 20,
   },
 });

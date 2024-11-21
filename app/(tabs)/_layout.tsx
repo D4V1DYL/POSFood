@@ -1,6 +1,7 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs, useFocusEffect } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -11,6 +12,9 @@ import Entypo from '@expo/vector-icons/Entypo';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const [waiterCode, setWaiterCode] = useState<string | null>(null);
+  const [serverIP, setServerIP] = useState<string | null>(null);
+
 
   return (
     <Tabs

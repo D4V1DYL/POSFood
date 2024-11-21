@@ -177,7 +177,7 @@ export default function HomeScreen() {
         visible={isModalVisible}
         onConfirm={handleConfirmChange}
         onCancel={handleCancelChange}
-        itemToChange={itemToChange} // Pass which item is being changed to the modal
+        itemToChange={itemToChange}
       />
     </View>
   );

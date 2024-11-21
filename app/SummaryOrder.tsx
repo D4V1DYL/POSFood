@@ -106,11 +106,11 @@ const OrderReviewScreen: React.FC = () => {
 
     try {
       const getBEIP = await AsyncStorage.getItem('serverBEIP');
-      const storedServerIP = `http://${getBEIP}/menu/list/all`;
+      const storedServerIP = `http://${getBEIP}/order/save`;
       setServerIP(storedServerIP);
 
       // Determine the correct API URL
-      const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : storedServerIP;
+      const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/order/save' : storedServerIP;
       const response = await axios.post(API_URL, payload);
       setAlertMessage('Order submitted successfully!');
       router.push('/');  // Navigate back to home or another screen
