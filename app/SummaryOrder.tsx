@@ -41,7 +41,7 @@ const OrderReviewScreen: React.FC = () => {
   const [serverIP, setServerIP] = useState<string>('');
 
 
-  const stage :string = 'dev'// 'Local' or 'Production'
+  const stage :string = 'production'// 'dev' or 'Production'
 
   // Fetch waiter code from AsyncStorage
   const fetchWaiterCode = async () => {

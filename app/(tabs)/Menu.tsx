@@ -6,28 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// const menuItems = [
-//   { id: 745, code: '2022006', fullname: 'SMIRNOF ICE GREEN APLE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-//   { id: 746, code: '2022007', fullname: 'SMIRNOF ICE ORANGE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-//   { id: 747, code: '2022008', fullname: 'SMIRNOF ICE BLACKBERRY', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-//   { id: 748, code: '2022009', fullname: 'SMIRNOF ICE POMEGRANATE', quantityType: 'BOTOL', pcs: 1.0, price: '42000.00' },
-// ];
-
-  
-
-
-
-
 interface MenuItem {
   id: number;
-  code: string; 
+  code: string;
   fullname: string;
   category: string;
   categoryType: string;
 }
-
-
-
 
 export default function Menu() {
   const [tableNumber, setTableNumber] = useState<string>('0');
@@ -39,15 +24,12 @@ export default function Menu() {
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [currentItem, setCurrentItem] = useState<MenuItem | null>(null);
   const [keterangan, setKeterangan] = useState<string>('');
-  const [cartItemsMenu, setCartItemsMenu] = useState([]);
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]); // New state for menu items
+  const [quantity, setQuantity] = useState<number>(1);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [serverIP, setServerIP] = useState<string>('');
   const [waiterCode, setWaiterCode] = useState<string | null>(null);
 
-
-  const stage: string = 'dev'; // 'Local' or 'Production'
-
+  const stage: string = 'production'; // 'dev' or 'Production'
 
   const categorizeItem = (code: string): string => {
     if (code.startsWith('1')) {
@@ -59,26 +41,23 @@ export default function Menu() {
     }
   };
 
-
-
-
-    useFocusEffect(
-      React.useCallback(() => {
-        const fetchStoredData = async () => {
-          try {
-            const storedServerIP = await AsyncStorage.getItem('serverBEIP');
-            const storedWaiterCode = await AsyncStorage.getItem('waiterCode');
-            if (storedServerIP) setServerIP(storedServerIP);
-            if (storedWaiterCode) setWaiterCode(storedWaiterCode);
-          } catch (error) {
-            console.error('Error fetching stored data:', error);
-          }
-        };
-        fetchStoredData();
-      }, [serverIP, waiterCode])
-    );
-
-  
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchStoredData = async () => {
+        try {
+          const storedServerIP = await AsyncStorage.getItem('serverBEIP');
+          const storedWaiterCode = await AsyncStorage.getItem('waiterCode');
+          if (storedWaiterCode) setWaiterCode(storedWaiterCode);
+          else setWaiterCode('');
+          if (storedServerIP) setServerIP(storedServerIP);
+          else setServerIP('');
+        } catch (error) {
+          console.error('Error fetching stored data:', error);
+        }
+      };
+      fetchStoredData();
+    }, [serverIP, waiterCode])
+  );
 
   useEffect(() => {
     const fetchServerIpAndMenuItems = async () => {
@@ -87,44 +66,54 @@ export default function Menu() {
         const getBEIP = await AsyncStorage.getItem('serverBEIP');
         const storedServerIP = `http://${getBEIP}/menu/list/all`;
         setServerIP(storedServerIP);
-  
+
         // Determine the correct API URL
         const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : storedServerIP;
-  
+
         // Fetch the menu items
         const response = await axios.get(API_URL);
-        setMenuItems(response.data.map((item: any) => ({
+        const fetchedMenuItems = response.data.map((item: any) => ({
           id: item.id,
           code: item.code,
           fullname: item.fullName,
           category: categorizeItem(item.code),
           categoryType: item.quantityType,
-        })));
+        }));
+        setMenuItems(fetchedMenuItems);
+
+        // Save menu items to AsyncStorage
+        await AsyncStorage.setItem('menuItems', JSON.stringify(fetchedMenuItems));
       } catch (error) {
         console.error('Failed to fetch menu items', error);
       }
     };
-  
+
     fetchServerIpAndMenuItems();
-  }, []); // Empty dependency arra
+  }, []);
 
-  const menuItemsWithId = menuItems.map((item, index) => ({
-    ...item,
-    id: index + 1,
-    code: item.code,
-    fullname: item.fullname,
-    categoryType: item.categoryType,
-  }));
+  const refreshMenu = async () => {
+    try {
+      const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : `http://${serverIP}/menu/list/all`;
+      const response = await axios.get(API_URL);
+      const fetchedMenuItems = response.data.map((item: any) => ({
+        id: item.id,
+        code: item.code,
+        fullname: item.fullName,
+        category: categorizeItem(item.code),
+        categoryType: item.quantityType,
+      }));
+      setMenuItems(fetchedMenuItems);
 
-  const menuItemsWithCategory = menuItems.map((item) => ({
-    ...item,
-    category: categorizeItem(item.code),
-    categoryType: item.categoryType,
-  }));
+      // Save menu items to AsyncStorage
+      await AsyncStorage.setItem('menuItems', JSON.stringify(fetchedMenuItems));
+    } catch (error) {
+      console.error('Failed to refresh menu items', error);
+    }
+  };
 
-  
-
-
+  const clearOrder = () => {
+    setCartItems([]);
+  };
 
   const addItemToCart = (item: MenuItem) => {
     setCurrentItem(item);
@@ -133,33 +122,29 @@ export default function Menu() {
 
   const handleAddItem = () => {
     if (currentItem) {
-      // Check if the item already exists in the cart with the same note
       const existingItem = cartItems.find(cartItem =>
         cartItem.item.code === currentItem.code && cartItem.keterangan === keterangan
       );
-  
-      // If the item with the same note exists, update quantity
+
       if (existingItem) {
         setCartItems(cartItems.map(cartItem =>
           cartItem.item.code === currentItem.code && cartItem.keterangan === keterangan
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            ? { ...cartItem, quantity: cartItem.quantity + quantity }
             : cartItem
         ));
       } else {
-        // If the item with the note doesn't exist, add a new item to the cart
         setCartItems([
           ...cartItems,
-          { item: currentItem, keterangan: keterangan ?? '', quantity: 1 }
+          { item: currentItem, keterangan: keterangan ?? '', quantity: quantity }
         ]);
       }
-  
-      // Show cart prompt and reset the modal
+
       setIsCartPromptVisible(true);
       setIsModalVisible(false);
       setKeterangan('');
+      setQuantity(1);
     }
   };
-  
 
   const removeItemFromCart = (item: MenuItem) => {
     const existingItem = cartItems.find(cartItem => cartItem.item.code === item.code);
@@ -170,7 +155,7 @@ export default function Menu() {
           : cartItem
       ));
     } else {
-      setCartItems(cartItems.filter(cartItem => cartItem.item.code !== item.code ));
+      setCartItems(cartItems.filter(cartItem => cartItem.item.code !== item.code));
     }
   };
 
@@ -178,19 +163,18 @@ export default function Menu() {
 
   const totalQuantityPerItem = (itemId: string) => {
     let total = 0;
-    cartItems.forEach(e => { 
-      if(e.item.code === itemId) {
+    cartItems.forEach(e => {
+      if (e.item.code === itemId) {
         total = total + e.quantity;
       }
     });
     return total;
   };
 
-  const filteredMenuItems = menuItemsWithCategory.filter(item =>
+  const filteredMenuItems = menuItems.filter(item =>
     (selectedCategory === 'All' || item.category === selectedCategory) &&
     item.fullname.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
 
   if (!waiterCode || !serverIP) {
     return (
@@ -200,145 +184,159 @@ export default function Menu() {
     );
   }
 
-    if (!isTableEntered) {
-      return (
-        <View style={[styles.container, styles.centeredContainer]}>
-          <Text style={styles.title}>Enter Table Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter table number"
-            keyboardType="numeric"
-            value={tableNumber}
-            onChangeText={setTableNumber}
-          />
-          <Button title="Confirm" onPress={() => setIsTableEntered(true)} color="#7B68EE" />
-        </View>
-      );
-    }
-  
+  if (!isTableEntered) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Make Your Selection!</Text>
-        </View>
-  
-        {isTableEntered && (
-          <View style={styles.tableInfo}>
-            <Text style={styles.tableText}>You’re at table {tableNumber}</Text>
-            <Button title="Change Table" onPress={() => setIsTableEntered(false)} color="#7B68EE" />
-          </View>
-        )}
-  
+      <View style={[styles.container, styles.centeredContainer]}>
+        <Text style={styles.title}>Enter Table Number</Text>
         <TextInput
           style={styles.input}
-          placeholder="Search menu..."
-          value={searchTerm}
-          onChangeText={setSearchTerm}
+          placeholder="Enter table number"
+          keyboardType="numeric"
+          value={tableNumber}
+          onChangeText={setTableNumber}
         />
-        <View style={styles.categoryContainer}>
-          {['All', 'Food', 'Beverage', 'Others'].map(category => (
-            <TouchableOpacity
-              key={category}
-              onPress={() => setSelectedCategory(category.split(' ')[0])}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category.split(' ')[0] && styles.selectedCategoryButton,
-              ]}
-            >
-              {category === 'Others' ? (
-                <View style={styles.categoryContent}>
-                  <Text style={styles.categoryButtonText}>Others</Text>
-                  <Image
-                    source={require('../../assets/images/other_menu-removebg-preview.png')} // Replace with your image path
-                    style={styles.categoryImage}
-                  />
-                </View>
-              ) : category === 'Food' ? (
-                <View style={styles.categoryContent}>
-                  <Text style={styles.categoryButtonText}>Food</Text>
-                  <Image
-                    source={require('../../assets/images/food_orange-removebg-preview.png')} // Replace with your image path
-                    style={styles.categoryImage}
-                  />
-                </View>
-              ) : category === 'Beverage' ? (
-                <View style={styles.categoryContent}>
-                  <Text style={styles.categoryButtonText}>Beverage</Text>
-                  <Image
-                    source={require('../../assets/images/drink_orange1-removebg-preview.png')} // Replace with your image path
-                    style={styles.categoryImage}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.categoryButtonText}>{category}</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-        <FlatList
-          data={filteredMenuItems}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.menuItem}>
-              <Text style={styles.menuName}>{item.fullname.toUpperCase()}</Text>
-              <View style={styles.quantityContainer}>
-                <TouchableOpacity onPress={() => removeItemFromCart(item)}>
-                  <Ionicons name="remove-circle-outline" size={30} color="#4C3A8C" />              
-                  </TouchableOpacity>
-                <Text style={styles.quantityText}>
-                  {totalQuantityPerItem(item.code.toString())}
-                </Text>
-                <TouchableOpacity onPress={() => addItemToCart(item)}>
-                  <Ionicons name="add-circle-outline" size={30} color="#4C3A8C" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        />
-  
-        <View style={styles.bottomBar}>
-          <Text style={styles.cartText}>Total Items: {totalQuantity}</Text>
-          <Link
-            href={{
-              pathname: '/SummaryOrder',
-              params: { 
-                  cartItems: JSON.stringify(cartItems),
-                  tableNumber: tableNumber || '00'
-              }
-            }}
-            asChild
-          >
-            <Button title="Continue" color="#7B68EE" disabled={totalQuantity === 0}/>
-          </Link>
-        </View>
-  
-        <Modal
-          visible={isModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setIsModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Add Item</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Enter Notes"
-                value={keterangan}
-                onChangeText={setKeterangan}
-              />
-              <View style={styles.modalButtons}>
-                <Button title="Cancel" onPress={() => setIsModalVisible(false)} color="#FF6347" />
-                <Button title="Add" onPress={handleAddItem} color="#7B68EE" />
-              </View>
-            </View>
-          </View>
-        </Modal>
+        <Button title="Confirm" onPress={() => setIsTableEntered(true)} color="#7B68EE" />
       </View>
     );
+  }
 
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Make Your Selection!</Text>
+        <View style={styles.buttonRow}>
+          <Button title="Refresh Menu" onPress={refreshMenu} color="#7B68EE" />
+          <View style={styles.buttonGap} />
+          <Button title="Clear Order" onPress={clearOrder} color="#FF6347" />
+        </View>
+      </View>
 
+      {isTableEntered && (
+        <View style={styles.tableInfo}>
+          <Text style={styles.tableText}>You’re at table {tableNumber}</Text>
+          <Button title="Change Table" onPress={() => setIsTableEntered(false)} color="#7B68EE" />
+        </View>
+      )}
+
+      <TextInput
+        style={styles.input}
+        placeholder="Search menu..."
+        value={searchTerm}
+        onChangeText={setSearchTerm}
+      />
+      <View style={styles.categoryContainer}>
+        {['All', 'Food', 'Beverage', 'Others'].map(category => (
+          <TouchableOpacity
+            key={category}
+            onPress={() => setSelectedCategory(category.split(' ')[0])}
+            style={[
+              styles.categoryButton,
+              selectedCategory === category.split(' ')[0] && styles.selectedCategoryButton,
+            ]}
+          >
+            {category === 'Others' ? (
+              <View style={styles.categoryContent}>
+                <Text style={styles.categoryButtonText}>Others</Text>
+                <Image
+                  source={require('../../assets/images/other_menu-removebg-preview.png')} // Replace with your image path
+                  style={styles.categoryImage}
+                />
+              </View>
+            ) : category === 'Food' ? (
+              <View style={styles.categoryContent}>
+                <Text style={styles.categoryButtonText}>Food</Text>
+                <Image
+                  source={require('../../assets/images/food_orange-removebg-preview.png')} // Replace with your image path
+                  style={styles.categoryImage}
+                />
+              </View>
+            ) : category === 'Beverage' ? (
+              <View style={styles.categoryContent}>
+                <Text style={styles.categoryButtonText}>Beverage</Text>
+                <Image
+                  source={require('../../assets/images/drink_orange1-removebg-preview.png')} // Replace with your image path
+                  style={styles.categoryImage}
+                />
+              </View>
+            ) : (
+              <Text style={styles.categoryButtonText}>{category}</Text>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+      <FlatList
+        data={filteredMenuItems}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.menuItem}>
+            <Text style={styles.menuName}>{item.fullname.toUpperCase()}</Text>
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity onPress={() => removeItemFromCart(item)}>
+                <Ionicons name="remove-circle-outline" size={30} color="#4C3A8C" />
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>
+                {totalQuantityPerItem(item.code.toString())}
+              </Text>
+              <TouchableOpacity onPress={() => addItemToCart(item)}>
+                <Ionicons name="add-circle-outline" size={30} color="#4C3A8C" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      />
+
+      <View style={styles.bottomBar}>
+        <Text style={styles.cartText}>Total Items: {totalQuantity}</Text>
+        <Link
+          href={{
+            pathname: '/SummaryOrder',
+            params: {
+              cartItems: JSON.stringify(cartItems),
+              tableNumber: tableNumber || '00'
+            }
+          }}
+          asChild
+        >
+          <Button title="Continue" color="#7B68EE" disabled={totalQuantity === 0} />
+        </Link>
+      </View>
+
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Add Item</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Enter Notes"
+              value={keterangan}
+              onChangeText={setKeterangan}
+            />
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                <Ionicons name="remove-circle-outline" size={30} color="#4C3A8C" />
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                <Ionicons name="add-circle-outline" size={30} color="#4C3A8C" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalButtons}>
+              <Button title="Cancel" onPress={() => setIsModalVisible(false)} color="#FF6347" />
+              <Button title="Add" onPress={handleAddItem} color="#7B68EE" />
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -545,5 +543,15 @@ const styles = StyleSheet.create({
     color: '#A594F9',
     textAlign: 'center',
     padding: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    // alignItems: 'flex-end',
+    marginBottom: 5,
+    marginTop: 10,
+  },
+  buttonGap: {
+    width: 70, // Adjust the width to set the gap between buttons
   },
 });
