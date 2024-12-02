@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, TouchableOpacity, FlatList, StyleSheet, Modal, Image } from 'react-native';
-import { Link, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, TextInput, Button, TouchableOpacity, FlatList, StyleSheet, Modal, Image, Alert } from 'react-native';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,6 +28,9 @@ export default function Menu() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [serverIP, setServerIP] = useState<string>('');
   const [waiterCode, setWaiterCode] = useState<string | null>(null);
+  const [permissionMenu, setPermissionMenu] = useState<boolean | null>(null);
+  const [uuidValue, setUuidValue] = useState<string>('');
+
 
   const stage: string = 'production'; // 'dev' or 'Production'
 
@@ -41,55 +44,131 @@ export default function Menu() {
     }
   };
 
+  const fetchPermission = useCallback(async () => {
+    try {
+      const response = await axios.post(`http://${serverIP}/activation/${uuidValue}`);
+      if (response.data === "Activation Success") {
+        await AsyncStorage.setItem('permissionMenu', JSON.stringify(true));
+        setPermissionMenu(true);
+        Alert.alert('Success', 'Your account has been activated. You can now access the menu.');
+      } else {
+        setPermissionMenu(false);
+        Alert.alert('Error', `${response.data}. Please try again.`);
+        console.error('Error', response.data , 'Please try again.');
+      }
+    } catch (error) {
+      console.error('Error fetching permission:', error);
+      setPermissionMenu(false);
+    }
+  }, [serverIP, uuidValue]);
+
+  const fetchServerIpAndMenuItems = async () => {
+    try {
+      // Fetch the server IP from AsyncStorage
+      const getBEIP = await AsyncStorage.getItem('serverBEIP');
+      if(!getBEIP) {
+        Alert.alert('Error', 'Server IP is not set. Please configure it.');
+      }
+      const storedServerIP = `http://${getBEIP}/menu/list/all`;
+      setServerIP(storedServerIP);
+
+      // Determine the correct API URL
+      const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : storedServerIP;
+      // Alert.alert('API URL', API_URL);
+
+      // Fetch the menu items
+      const response = await axios.get(API_URL);
+      const fetchedMenuItems = response.data.map((item: any) => ({
+        id: item.id,
+        code: item.code,
+        fullname: item.fullName,
+        category: categorizeItem(item.code),
+        categoryType: item.quantityType,
+      }));
+      setMenuItems(fetchedMenuItems);
+
+      // Save menu items to AsyncStorage
+      await AsyncStorage.setItem('menuItems', JSON.stringify(fetchedMenuItems));
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        Alert.alert('Failed to fetch menu items', error.message);
+      } else {
+        Alert.alert('Failed to fetch menu items', 'An unknown error occurred' +' '+ serverIP);
+      }
+    }
+  };
+  
+  
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       const fetchStoredData = async () => {
         try {
           const storedServerIP = await AsyncStorage.getItem('serverBEIP');
           const storedWaiterCode = await AsyncStorage.getItem('waiterCode');
-          if (storedWaiterCode) setWaiterCode(storedWaiterCode);
-          else setWaiterCode('');
-          if (storedServerIP) setServerIP(storedServerIP);
-          else setServerIP('');
+          const storedUuidValue = await AsyncStorage.getItem('uuid');
+          const storedPermissionMenu = await AsyncStorage.getItem('permissionMenu');
+          const storedMenuItems = await AsyncStorage.getItem('menuItems');
+  
+          setWaiterCode(storedWaiterCode || '');
+          setServerIP(storedServerIP || '');
+          setUuidValue(storedUuidValue || '');
+          setMenuItems(storedMenuItems ? JSON.parse(storedMenuItems) : []);
+          setPermissionMenu(storedPermissionMenu ? JSON.parse(storedPermissionMenu) : false);
+
+          if (!storedMenuItems || JSON.parse(storedMenuItems).length === 0) {
+            fetchServerIpAndMenuItems();
+          }
+
         } catch (error) {
           console.error('Error fetching stored data:', error);
         }
       };
+  
       fetchStoredData();
-    }, [serverIP, waiterCode])
+  
+    }, [])
   );
 
-  useEffect(() => {
-    const fetchServerIpAndMenuItems = async () => {
-      try {
-        // Fetch the server IP from AsyncStorage
-        const getBEIP = await AsyncStorage.getItem('serverBEIP');
-        const storedServerIP = `http://${getBEIP}/menu/list/all`;
-        setServerIP(storedServerIP);
 
-        // Determine the correct API URL
-        const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : storedServerIP;
+  // useEffect(() => {
+  //   const fetchServerIpAndMenuItems = async () => {
+  //     try {
+  //       // Fetch the server IP from AsyncStorage
+  //       const getBEIP = await AsyncStorage.getItem('serverBEIP');
+  //       if(!getBEIP) {
+  //         Alert.alert('Error', 'Server IP is not set. Please configure it.');
+  //       }
+  //       const storedServerIP = `http://${getBEIP}/menu/list/all`;
+  //       setServerIP(storedServerIP);
 
-        // Fetch the menu items
-        const response = await axios.get(API_URL);
-        const fetchedMenuItems = response.data.map((item: any) => ({
-          id: item.id,
-          code: item.code,
-          fullname: item.fullName,
-          category: categorizeItem(item.code),
-          categoryType: item.quantityType,
-        }));
-        setMenuItems(fetchedMenuItems);
+  //       // Determine the correct API URL
+  //       const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/menu/list/all' : storedServerIP;
+  //       // Alert.alert('API URL', API_URL);
 
-        // Save menu items to AsyncStorage
-        await AsyncStorage.setItem('menuItems', JSON.stringify(fetchedMenuItems));
-      } catch (error) {
-        console.error('Failed to fetch menu items', error);
-      }
-    };
+  //       // Fetch the menu items
+  //       const response = await axios.get(API_URL);
+  //       const fetchedMenuItems = response.data.map((item: any) => ({
+  //         id: item.id,
+  //         code: item.code,
+  //         fullname: item.fullName,
+  //         category: categorizeItem(item.code),
+  //         categoryType: item.quantityType,
+  //       }));
+  //       setMenuItems(fetchedMenuItems);
 
-    fetchServerIpAndMenuItems();
-  }, []);
+  //       // Save menu items to AsyncStorage
+  //       await AsyncStorage.setItem('menuItems', JSON.stringify(fetchedMenuItems));
+  //     } catch (error) {
+  //       if (axios.isAxiosError(error)) {
+  //         Alert.alert('Failed to fetch menu items', error.message);
+  //       } else {
+  //         Alert.alert('Failed to fetch menu items', 'An unknown error occurred' +' '+ serverIP);
+  //       }
+  //     }
+  //   };
+
+  //   fetchServerIpAndMenuItems();
+  // }, []);
 
   const refreshMenu = async () => {
     try {
@@ -107,7 +186,11 @@ export default function Menu() {
       // Save menu items to AsyncStorage
       await AsyncStorage.setItem('menuItems', JSON.stringify(fetchedMenuItems));
     } catch (error) {
-      console.error('Failed to refresh menu items', error);
+      if (axios.isAxiosError(error)) {
+        Alert.alert('Failed to fetch menu items', error.message);
+      } else {
+        Alert.alert('Failed to fetch menu items', 'An unknown error occurred');
+      }
     }
   };
 
@@ -171,10 +254,20 @@ export default function Menu() {
     return total;
   };
 
+
   const filteredMenuItems = menuItems.filter(item =>
     (selectedCategory === 'All' || item.category === selectedCategory) &&
     item.fullname.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (!permissionMenu) {
+    return (
+      <View style={styles.container}>
+        <Text>Activate your account to access the menu.</Text>
+        <Button title="Activate" onPress={fetchPermission} />
+      </View>
+    );
+  }
 
   if (!waiterCode || !serverIP) {
     return (

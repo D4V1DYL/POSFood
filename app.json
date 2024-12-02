@@ -2,7 +2,7 @@
   "expo": {
     "name": "POSFood",
     "slug": "POSFood",
-    "version": "1.0.0",
+    "version": "V1.0a Rev. 2 Dec 24",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -34,6 +34,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
     "experiments": {
@@ -47,6 +55,12 @@
         "projectId": "656d1ed7-e879-46c2-8e88-96c243330b80"
       }
     },
-    "owner": "david_y"
+    "owner": "david_y",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/656d1ed7-e879-46c2-8e88-96c243330b80"
+    }
   }
 }

@@ -9,9 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  BackHandler,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import uuid from 'react-native-uuid';
+import * as Clipboard from 'expo-clipboard';
 
 const CustomAlert = ({
   visible,
@@ -56,8 +60,37 @@ export default function HomeScreen() {
   const [serverIP, setServerIP] = useState<string>('');  
   const [isWaiterCodeEntered, setIsWaiterCodeEntered] = useState<boolean>(false);
   const [isServerIPEntered, setIsServerIPEntered] = useState<boolean>(false); 
+  const [uuidValue, setUuidValue] = useState<string>('');
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [itemToChange, setItemToChange] = useState<string>(''); 
+  const [showUuid, setShowUuid] = useState<boolean>(false);
+
+
+  useEffect(() => {
+    const fetchUuid = async () => {
+      try {
+        const storedUuid = await AsyncStorage.getItem('uuid');
+        if (storedUuid) {
+          setUuidValue(storedUuid);
+        } else {
+          const newUuid = uuid.v4() as string;
+          await AsyncStorage.setItem('uuid', newUuid);
+          setUuidValue(newUuid);
+        }
+      } catch (error) {
+        console.error('Error fetching UUID:', error);
+      }
+    };
+
+    fetchUuid();
+  }, []);
+
+
+  const copyToClipboard = async () => {
+    await Clipboard.setStringAsync(uuidValue);
+    Alert.alert('Copied to Clipboard', 'UUID has been copied to clipboard.');
+  };
+
 
   useEffect(() => {
     const loadData = async () => {
@@ -97,6 +130,16 @@ export default function HomeScreen() {
     setItemToChange('Server IP');
     setIsModalVisible(true);
   };
+
+  useEffect(() => {
+    const backAction = () => {
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, []);
 
   const handleConfirmChange = async () => {
     if (itemToChange === 'Waiter Code') {
@@ -165,7 +208,7 @@ export default function HomeScreen() {
           <Text style={styles.changeUserText}>Change Server IP</Text>
         </TouchableOpacity>
         <Image
-          source={require('../../assets/images/logo_billiard-removebg-preview.png')}
+          source={require('../../assets/images/Logo_Netral_final-modified.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -179,6 +222,17 @@ export default function HomeScreen() {
         onCancel={handleCancelChange}
         itemToChange={itemToChange}
       />
+      <TouchableOpacity onPress={() => setShowUuid(!showUuid)}>
+        <Text style={styles.showCodeText}>{showUuid ? 'Hide Id' : 'Show Id'}</Text>
+      </TouchableOpacity>
+     {showUuid && (
+        <View style={styles.uuidContainer}>
+          <Text style={styles.uuidText}>{uuidValue}</Text>
+          <TouchableOpacity onPress={copyToClipboard}>
+            <Text style={styles.copyText}>Copy Id</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -252,18 +306,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#4C3A8C',
     textAlign: 'center',
-    marginTop: 20,
+    top: 50,
   },
   subText: {
     fontSize: 16,
     color: '#6D5F9A',
-    marginTop: 10,
+    top: 50,
     textAlign: 'center',
   },
   logo: {
     width: 300,
     height: 200,
     top: 50,
+    left:5
   },
   changeUserButton: {
     flexDirection: 'row',
@@ -331,5 +386,27 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  uuidContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+  uuidText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  copyText: {
+    fontSize: 16,
+    color: '#7B68EE',
+    marginTop: 10,
+  },
+  showCodeText: {
+    fontSize: 16,
+    color: '#7B68EE',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

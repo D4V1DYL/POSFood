@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Alert, Modal, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,7 +16,6 @@ interface Order {
 }
 
 const API_URL = 'https://itdgyec.localto.net/order/save';
-
 
 const CustomAlert: React.FC<{ message: string; onClose: () => void }> = ({ message, onClose }) => (
   <Modal transparent={true} animationType="slide" visible={true}>
@@ -40,8 +39,7 @@ const OrderReviewScreen: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [serverIP, setServerIP] = useState<string>('');
 
-
-  const stage :string = 'production'// 'dev' or 'Production'
+  const stage: string = 'production'; // 'dev' or 'Production'
 
   // Fetch waiter code from AsyncStorage
   const fetchWaiterCode = async () => {
@@ -54,7 +52,6 @@ const OrderReviewScreen: React.FC = () => {
       console.error('Error fetching waiterCode:', error);
     }
   };
-
 
   // Parse cart items and initialize orders on component mount
   useEffect(() => {
@@ -74,7 +71,6 @@ const OrderReviewScreen: React.FC = () => {
         id: (index + 1).toString(),
       }));
 
-      
       setOrders(menuItemsWithId);
     }
     fetchWaiterCode();
@@ -101,7 +97,7 @@ const OrderReviewScreen: React.FC = () => {
       waiterCode,
       tableNumber: parseInt(tableNumber as string),
       customerName: name,
-      orderDetails:orders.map(({ id, ...rest }) => rest),
+      orderDetails: orders.map(({ id, ...rest }) => rest),
     };
 
     try {
@@ -113,11 +109,27 @@ const OrderReviewScreen: React.FC = () => {
       const API_URL = stage === 'dev' ? 'https://itdgyec.localto.net/order/save' : storedServerIP;
       const response = await axios.post(API_URL, payload);
       setAlertMessage('Order submitted successfully!');
-      router.push('/');  // Navigate back to home or another screen
     } catch (error) {
-      setAlertMessage('Failed to submit order. Please try again.');
+      if (axios.isAxiosError(error)) {
+        setAlertMessage(`Failed to submit order. Please try again: ${error.message}`);
+      } else {
+        setAlertMessage('Failed to submit order. Please try again: An unknown error occurred');
+      }
     }
   };
+
+  useEffect(() => {
+    const backAction = () => {
+      if (alertMessage) {
+        return true; // Prevent default behavior (going back)
+      }
+      return false; // Allow default behavior (going back)
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    return () => backHandler.remove();
+  }, [alertMessage]);
 
   const renderItem = ({ item }: { item: Order }) => (
     <View style={styles.orderItem}>
@@ -171,7 +183,21 @@ const OrderReviewScreen: React.FC = () => {
           <Text style={styles.buttonText}>Order!</Text>
         </View>
       </TouchableOpacity>
-      {alertMessage && <CustomAlert message={alertMessage} onClose={() => setAlertMessage(null)} />}
+    {alertMessage && (
+        <CustomAlert
+          message={alertMessage}
+          onClose={() => {
+            if (alertMessage === 'Order submitted successfully!') {
+              setAlertMessage(null);
+              router.replace({
+                pathname: '/',
+              });
+            } else {
+              setAlertMessage(null);
+            }
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -204,7 +230,6 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: 10,
     fontWeight: 'bold',
-
   },
   nameContainer: {
     flexDirection: 'row',
