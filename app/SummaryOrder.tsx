@@ -38,6 +38,7 @@ const OrderReviewScreen: React.FC = () => {
   const [name, setName] = useState<string>('');
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [serverIP, setServerIP] = useState<string>('');
+  const [uuid, setUuid] = useState<string>('');
 
   const stage: string = 'production'; // 'dev' or 'Production'
 
@@ -46,6 +47,8 @@ const OrderReviewScreen: React.FC = () => {
     try {
       const storedWaiterCode = await AsyncStorage.getItem('waiterCode');
       const storedServerIP = await AsyncStorage.getItem('serverIP');
+      const storedUuid = await AsyncStorage.getItem('uuid');
+      if (storedUuid) setUuid(storedUuid);
       if (storedWaiterCode) setWaiterCode(storedWaiterCode);
       if (storedServerIP) setServerIP(storedServerIP);
     } catch (error) {
@@ -97,6 +100,7 @@ const OrderReviewScreen: React.FC = () => {
       waiterCode,
       tableNumber: parseInt(tableNumber as string),
       customerName: name,
+      phoneUuid: uuid,
       orderDetails: orders.map(({ id, ...rest }) => rest),
     };
 
